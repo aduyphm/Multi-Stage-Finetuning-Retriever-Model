@@ -40,7 +40,7 @@ Triple dataset:
     └── score
 ```
 
-## Stage 1: Train with BM25 negatives
+## Stage 1: Train retriever with BM25 negatives
 BM25 negatives mining
 ```
 python bm25_negatives_mining.py \
@@ -48,6 +48,14 @@ python bm25_negatives_mining.py \
         --data_file viquad.json \
         --corpus_file viquad_corpus.json \
         --top_k 20
+```
+Train retriever
+```
+export DATA_DIR=./data/
+export OUTPUT_DIR=./checkpoint/biencoder/
+
+# Train bi-encoder
+bash scripts/train_biencoder_model.sh
 ```
 
 ## Stage 2: Train with hard negatives
