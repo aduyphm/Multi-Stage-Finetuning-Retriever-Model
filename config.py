@@ -21,6 +21,9 @@ class Arguments(TrainingArguments):
     task_type: str = field(
         default='ir', metadata={"help": "task type: ir / qa"}
     )
+    corpus_file: str = field(
+        default=None, metadata={"help": "The corpus file (a jsonlines file)."}
+    )
     train_file: Optional[str] = field(
         default=None, metadata={"help": "The input training data file (a jsonlines file)."}
     )
