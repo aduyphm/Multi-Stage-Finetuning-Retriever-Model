@@ -44,10 +44,10 @@ Triple dataset:
 BM25 negatives mining
 ```
 python bm25_negatives_mining.py \
-        --data_dir $DATA_DIR \
-        --data_file $DATA_file \
-        --corpus_file $CORPUS_FILE \
-        --top_k $TOP_K
+        --data_dir data \
+        --data_file viquad.json \
+        --corpus_file viquad_corpus.json \
+        --top_k 20
 ```
 
 ## Stage 2: Train with hard negatives
