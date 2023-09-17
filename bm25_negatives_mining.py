@@ -115,5 +115,7 @@ if __name__ == "__main__":
             }
         })
 
-    with open(os.path.join(data_dir, f"bm25_{data_file.split('.')[0]}_top{top_k}.json"), "w") as file:
+    if not os.path.exists(os.path.join(data_dir,"bm25")):
+        os.makedirs(os.path.join(data_dir,"bm25"))
+    with open(os.path.join(data_dir, "bm25", f"bm25_{data_file.split('.')[0]}_top{top_k}.json"), "w") as file:
         json.dump(data, file)
