@@ -52,9 +52,6 @@ python bm25_negatives_mining.py \
 ```
 Train retriever
 ```
-export DATA_DIR=./data/
-export OUTPUT_DIR=./checkpoints/biencoder/
-
 # Train bi-encoder
 bash scripts/train_biencoder_model.sh
 ```
