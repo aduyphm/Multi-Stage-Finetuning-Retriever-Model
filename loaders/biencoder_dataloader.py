@@ -15,8 +15,6 @@ import pandas as pd
 import json
 from sklearn.model_selection import train_test_split
 
-
-
 class RetrievalDataLoader:
 
     def __init__(self, args: Arguments, tokenizer: PreTrainedTokenizerFast):
@@ -25,7 +23,7 @@ class RetrievalDataLoader:
         assert self.negative_size > 0
         self.tokenizer = tokenizer
         
-        documents_data = pd.read_csv(os.path.join(args.data_dir, 'vbpl.csv'), encoding='utf-16')
+        documents_data = pd.read_json(os.path.join(args.data_dir, self.args.corpus_file))
         self.corpus = Dataset.from_pandas(documents_data)
         
 #         corpus_path = os.path.join(args.data_dir, 'passages.jsonl.gz')
@@ -36,7 +34,10 @@ class RetrievalDataLoader:
         self.trainer: Optional[Trainer] = None
 
     def _transform_func(self, examples: Dict[str, List]) -> Dict[str, List]:
-        current_epoch = int(self.trainer.state.epoch or 0)
+        current_epoch = 0
+        
+        if self.trainer:
+            current_epoch = int(self.trainer.state.epoch)
         
         # doc_id = (so_hieu, dieu)
         input_doc_ids: List[int] = group_doc_ids(
@@ -45,16 +46,23 @@ class RetrievalDataLoader:
             offset=current_epoch + self.args.seed,
             use_first_positive=self.args.use_first_positive
         )
-        print(input_doc_ids)
-        print(f"len(examples['query']): {len(examples['query'])}")
-        print(f"train_n_passages: {self.args.train_n_passages}")
+#         print(input_doc_ids)
+#         print(f"len(examples['query']): {len(examples['query'])}")
+#         print(f"train_n_passages: {self.args.train_n_passages}")
 #         assert len(input_doc_ids) == len(examples['query']) * self.args.train_n_passages
     
 #         input_docs: List[str] = [self.corpus[doc_id]['noi_dung_vb'] for doc_id in input_doc_ids]
 #         input_titles: List[str] = [self.corpus[doc_id]['prefix'] for doc_id in input_doc_ids]
 
-        input_docs: List[str] = [self.corpus[self.corpus["so_hieu"] == doc_id["so_hieu"] and self.corpus["dieu"] == doc_id["dieu"]]['noi_dung_vb'] for doc_id in input_doc_ids]
-        input_titles: List[str] = [self.corpus[self.corpus["so_hieu"] == doc_id["so_hieu"] and self.corpus["dieu"] == doc_id["dieu"]]['prefix'] for doc_id in input_doc_ids]
+        if self.args.corpus_file.startswith("legal_"):
+            input_docs: List[str] = [self.corpus[self.corpus["so_hieu"] == doc_id["so_hieu"] and self.corpus["dieu"] == doc_id["dieu"]]['noi_dung_vb'] for doc_id in input_doc_ids]
+            input_titles: List[str] = [self.corpus[self.corpus["so_hieu"] == doc_id["so_hieu"] and self.corpus["dieu"] == doc_id["dieu"]]['prefix'] for doc_id in input_doc_ids]
+                
+        else: 
+            input_docs: List[str] = [self.corpus[self.corpus["id"] == doc_id]['context'] for doc_id in input_doc_ids]
+            input_titles: List[str] = [self.corpus[self.corpus["id"] == doc_id]['title'] for doc_id in input_doc_ids]
+                
+#         print(len(input_docs))
 
         query_batch_dict = self.tokenizer(examples['query'],
                                           max_length=self.args.q_max_len,
@@ -108,11 +116,16 @@ class RetrievalDataLoader:
 #         raw_datasets: DatasetDict = load_dataset('json', data_files=data_files)
 
 #         train_dataset, eval_dataset = None, None
-
-        with open(os.path.join(self.args.data_dir, 'bm25_neg_pairs_top20.json'), 'r') as json_file:
-            queries_data = json.load(json_file)
-        queries_df = pd.DataFrame(queries_data)
-        train_df, eval_df = train_test_split(queries_df, test_size=0.1, random_state=42)
+        train_dir = os.path.join(self.args.data_dir, self.args.train_dir)
+        train_data, eval_data = [], []
+        for train_file in os.listdir(train_dir):
+            with open(os.path.join(train_dir, train_file), 'r') as json_file:
+                queries_data = json.load(json_file)
+            train_json, eval_json = train_test_split(queries_data, test_size=0.2, random_state=42)
+            train_data.extend(train_json)
+            eval_data.extend(eval_json)
+        train_df = pd.DataFrame(train_data)
+        eval_df = pd.DataFrame(eval_data)
         train_dataset = Dataset.from_pandas(train_df)
         eval_dataset = Dataset.from_pandas(eval_df)
         train_dataset.set_transform(self._transform_func)

@@ -9,6 +9,7 @@ def group_doc_ids(examples: Dict[str, List],
                   negative_size: int,
                   offset: int,
                   use_first_positive: bool = False) -> List[int]:
+#     print(examples)
     pos_doc_ids: List[int] = []
     positives: List[Dict[str, List]] = examples['positives']
     for idx, ex_pos in enumerate(positives):
@@ -27,7 +28,7 @@ def group_doc_ids(examples: Dict[str, List],
         pos_doc_ids.append(cur_pos_doc_id)
 
     neg_doc_ids: List[List[int]] = []
-    negatives: List[Dict[str, List]] = examples['negatives']
+    negatives: List[Dict[str, List]] = examples['negatives'][:(negative_size - 1)]
     for ex_neg in negatives:
         cur_neg_doc_ids = _slice_with_mod(ex_neg['doc_id'],
                                           offset=offset * negative_size,
