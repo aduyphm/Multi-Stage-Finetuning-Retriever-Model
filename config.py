@@ -15,8 +15,11 @@ class Arguments(TrainingArguments):
         metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"}
     )
 
-    data_dir: str = field(
+    output_dir: str = field(
         default=None, metadata={"help": "Path to train directory"}
+    )
+    data_dir: str = field(
+        default="data", metadata={"help": "Path to train directory"}
     )
     task_type: str = field(
         default='ir', metadata={"help": "task type: ir / qa"}
@@ -24,7 +27,7 @@ class Arguments(TrainingArguments):
     corpus_file: str = field(
         default=None, metadata={"help": "The corpus file (a jsonlines file)."}
     )
-    train_file: Optional[str] = field(
+    train_dir: Optional[str] = field(
         default=None, metadata={"help": "The input training data file (a jsonlines file)."}
     )
     validation_file: Optional[str] = field(
