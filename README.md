@@ -55,6 +55,7 @@ Train retriever
 # Train bi-encoder
 bash scripts/train_biencoder_model.sh
 ```
+If you have more than 1 corpus, please send them to folder `data/corpus` merge them using: `ensemble_corpus.ipynb`
 
 ## Stage 2: Train with hard negatives
 Hard negatives mining
