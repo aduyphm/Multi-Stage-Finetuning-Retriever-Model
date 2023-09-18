@@ -89,7 +89,11 @@ class BiencoderModel(nn.Module):
 
     def _compute_scores(self, query: Dict[str, Tensor] = None,
                         passage: Dict[str, Tensor] = None) -> Tuple:
+#         print(query["input_ids"].shape)
+#         print(passage["input_ids"].shape)
+#         print("query")
         q_reps = self._encode(self.lm_q, query)
+#         print("passage")
         p_reps = self._encode(self.lm_p, passage)
 
         all_q_reps = dist_gather_tensor(q_reps)
@@ -116,13 +120,23 @@ class BiencoderModel(nn.Module):
 
         return scores, labels, q_reps, p_reps, all_scores, all_labels
 
+    # add
+    def _average_pool(self, last_hidden_states: Tensor,
+                     attention_mask: Tensor) -> Tensor:
+        last_hidden = last_hidden_states.masked_fill(~attention_mask[..., None].bool(), 0.0)
+        return last_hidden.sum(dim=1) / attention_mask.sum(dim=1)[..., None]
+    
     def _encode(self, encoder: PreTrainedModel, input_dict: dict) -> Optional[torch.Tensor]:
         if not input_dict:
             return None
-        outputs = encoder(**{k: v for k, v in input_dict.items() if k not in ['kd_labels']}, return_dict=True)
+#         print(input_dict.items())
+        batch_dict = {k: v for k, v in input_dict.items() if k not in ['kd_labels']}
+        outputs = encoder(**batch_dict, return_dict=True)
         hidden_state = outputs.last_hidden_state
         embeds = hidden_state[:, 0]
         embeds = self.pooler(embeds)
+#         embeds = self._average_pool(outputs.last_hidden_state, batch_dict['attention_mask'])
+#         print(embeds)
         if self.args.l2_normalize:
             embeds = F.normalize(embeds, dim=-1)
         return embeds.contiguous()
