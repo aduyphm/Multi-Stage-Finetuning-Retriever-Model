@@ -20,9 +20,17 @@ class BiencoderCollator(DataCollatorWithPadding):
 
     def __call__(self, features: List[Dict[str, Any]]) -> BatchEncoding:
         q_prefix, d_prefix = 'q_', 'd_'
+#         query_examples = []
         query_examples = [{k[len(q_prefix):]: v for k, v in f.items() if k.startswith(q_prefix)} for f in features]
         doc_examples = _unpack_doc_values(
             [{k[len(d_prefix):]: v for k, v in f.items() if k.startswith(d_prefix)} for f in features])
+#         doc_examples = []
+#         for f in features:
+#             keys = list(f.keys())
+#             if keys:
+#                 lists_per_key = len(f[keys[0]])
+#                 for idx in range(lists_per_key):
+#                     doc_examples.append({k[len(d_prefix):]: v for k, v in f.items() if k.startswith(d_prefix)})
         assert len(doc_examples) % len(query_examples) == 0, \
             '{} doc and {} queries'.format(len(doc_examples), len(query_examples))
 
