@@ -16,11 +16,10 @@ fi
 mkdir -p "${OUTPUT_DIR}"
 
 PROC_PER_NODE=$(nvidia-smi --list-gpus | wc -l)
-# python -u -m torch.distributed.launch --nproc_per_node ${PROC_PER_NODE} src/train_biencoder.py \
-deepspeed train_biencoder.py --deepspeed ds_config.json \
-    --model_name_or_path intfloat/multilingual-e5-large \
-    --per_device_train_batch_size 16 \
-    --per_device_eval_batch_size 32 \
+python -u -m torch.distributed.launch --nproc_per_node ${PROC_PER_NODE} train_biencoder.py \
+    --model_name_or_path intfloat/multilingual-e5-small \
+    --per_device_train_batch_size 2 \
+    --per_device_eval_batch_size 2 \
     --add_pooler False \
     --l2_normalize True \
     --t 0.02 \
@@ -28,8 +27,7 @@ deepspeed train_biencoder.py --deepspeed ds_config.json \
     --do_train \
     --fp16 \
     --train_dir "bm25" \
-    --corpus_file "viquad.json"
-#     --validation_file "${DATA_DIR}/dev.jsonl" \
+    --corpus_file "viquad_corpus.json" \
     --q_max_len 32 \
     --p_max_len 144 \
     --train_n_passages 20 \
