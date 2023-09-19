@@ -59,6 +59,8 @@ if __name__ == "__main__":
             json.dump(corpus, json_file)
 
     # Read corpus
+    with open(os.path.join(data_dir, corpus_file), 'r') as f:
+        corpus = json.load(f)
     corpus_df = pd.read_json(os.path.join(data_dir, corpus_file))
 
     bm25_corpus = []
