@@ -22,23 +22,21 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--data_dir", default="data", type=str)
-    parser.add_argument("--data_file", default="viquad.json", type=str)
-    parser.add_argument("--corpus_file", default="viquad_corpus.json", type=str)
+    parser.add_argument("--train_file", default="dvc.json", type=str)
+    parser.add_argument("--data_file", default="", type=str)
+    parser.add_argument("--corpus_file", default="legal_truncated_corpus.json", type=str)
     parser.add_argument("--top_k", default=20, type=int)
     args = parser.parse_args()
 
     data_dir = os.path.join(os.getcwd(), args.data_dir)
     data_file = args.data_file
+    train_file = args.train_file
     corpus_file = args.corpus_file
     top_k = args.top_k
 
-    # Read dataset
-    with open(os.path.join(data_dir, data_file), 'r') as json_file:
-        queries_data = json.load(json_file)
-    
-    # Create corpus if not having
-    prefix = data_file.split(".")[0]
     if not os.path.exists(os.path.join(data_dir, corpus_file)):
+        with open(os.path.join(data_dir, data_file), 'r') as json_file:
+            queries_data = json.load(json_file)
         train = []
         corpus = []
         idx = 0
@@ -48,36 +46,41 @@ if __name__ == "__main__":
                 for qa in paragraph["qas"]:
                     train.append({
                         "question": qa["question"],
-                        "related_docs": [prefix + "_" + str(idx)]
+                        "related_docs": [str(idx)]
                     })
                 corpus.append({
-                    "id": prefix + "_" + str(idx),
+                    "id": str(idx),
                     "title": title,
                     "context": paragraph["context"]
                 })
                 idx += 1
         with open(os.path.join(data_dir, corpus_file), 'w') as json_file:
             json.dump(corpus, json_file)
+    else:
+        with open(os.path.join(data_dir, train_file), 'r') as json_file:
+            train = json.load(json_file)
 
     # Read corpus
-    with open(os.path.join(data_dir, corpus_file), 'r') as f:
-        corpus = json.load(f)
-    corpus_df = pd.read_json(os.path.join(data_dir, corpus_file))
+    if corpus_file.endswith(".json"):
+        corpus_df = pd.read_json(os.path.join(data_dir, corpus_file))
+    elif corpus_file.endswith(".csv"):
+        corpus_df = pd.read_csv(os.path.join(data_dir, corpus_file), encoding="utf-16")
 
-    bm25_corpus = []
-    for item in corpus:
-        p = word_segment(item["context"])
-        p_tokens = p.split()
-        bm25_corpus.append(p_tokens)
+    if not os.path.join(data_dir, f"bm25_{corpus_file.split('.')[0]}"):
+        bm25_corpus = []
+        for index, row in corpus_df.iterrows():
+            p = word_segment(row["context"])
+            p_tokens = p.split()
+            bm25_corpus.append(p_tokens)
 
-    bm25 = BM25Plus(bm25_corpus, k1=k1, b=b)
-    with open(os.path.join(data_dir, f"bm25_{corpus_file}"), "wb") as bm_file:
-        pickle.dump(bm25, bm_file)
-
+        bm25 = BM25Plus(bm25_corpus, k1=k1, b=b)
+        with open(os.path.join(data_dir, f"bm25_{corpus_file.split('.')[0]}"), "wb") as bm_file:
+            pickle.dump(bm25, bm_file)
+        
     # Load model
-    with open(os.path.join(data_dir, f"bm25_{corpus_file}"), "rb") as bm_file:
+    with open(os.path.join(data_dir, f"bm25_{corpus_file.split('.')[0]}"), "rb") as bm_file:
         bm25 = pickle.load(bm_file)
-
+        
     data = []
     for i, item in tqdm(enumerate(train)):
         query = item["question"]
