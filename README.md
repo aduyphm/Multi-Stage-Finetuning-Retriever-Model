@@ -55,12 +55,23 @@ Train retriever
 # Train bi-encoder
 bash scripts/train_biencoder_model.sh
 ```
-If you have more than 1 corpus, please send them to folder `data/corpus` merge them using: `ensemble_corpus.ipynb`
+If you have more than 1 corpus, please send them to folder `data/corpus` and merge them using: `ensemble_corpus.ipynb`
 
 ## Stage 2: Train with hard negatives
 Hard negatives mining
-
-
+```
+python hard_negatives_mining.py \
+        --data_dir data \
+        --data_file viquad.json \
+        --index_file viquad_index.index \
+        --corpus_file viquad_corpus.json \
+        --top_k 20
+```
+Train retriever
+```
+# Train bi-encoder
+bash scripts/train_biencoder_model.sh
+```
 ## Stage 3: Train with cross encoder
 
 
