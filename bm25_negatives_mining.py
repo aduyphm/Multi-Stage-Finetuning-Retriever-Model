@@ -37,6 +37,7 @@ if __name__ == "__main__":
         queries_data = json.load(json_file)
     
     # Create corpus if not having
+    prefix = data_file.split(".")[0]
     if not os.path.exists(os.path.join(data_dir, corpus_file)):
         train = []
         corpus = []
@@ -47,10 +48,10 @@ if __name__ == "__main__":
                 for qa in paragraph["qas"]:
                     train.append({
                         "question": qa["question"],
-                        "related_docs": [str(idx)]
+                        "related_docs": [prefix + "_" + str(idx)]
                     })
                 corpus.append({
-                    "id": str(idx),
+                    "id": prefix + "_" + str(idx),
                     "title": title,
                     "context": paragraph["context"]
                 })
