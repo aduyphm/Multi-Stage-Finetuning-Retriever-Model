@@ -46,6 +46,7 @@ BM25 negatives mining
 ```
 python bm25_negatives_mining.py \
         --data_dir data \
+        --train_file "" \
         --data_file viquad.json \
         --corpus_file viquad_corpus.json \
         --top_k 20
@@ -62,9 +63,12 @@ Hard negatives mining
 ```
 python hard_negatives_mining.py \
         --data_dir data \
+        --train_file viquad_train.json \
         --data_file viquad.json \
         --index_file viquad_index.index \
         --corpus_file viquad_corpus.json \
+        --q_max_length 32 \
+        --p_max_length 144 \
         --top_k 20
 ```
 Train retriever
