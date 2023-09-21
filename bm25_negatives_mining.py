@@ -34,6 +34,7 @@ if __name__ == "__main__":
     corpus_file = args.corpus_file
     top_k = args.top_k
 
+    prefix = data_file.split(".")[0]
     if not os.path.exists(os.path.join(data_dir, corpus_file)):
         with open(os.path.join(data_dir, data_file), 'r') as json_file:
             queries_data = json.load(json_file)
@@ -46,10 +47,10 @@ if __name__ == "__main__":
                 for qa in paragraph["qas"]:
                     train.append({
                         "question": qa["question"],
-                        "related_docs": [str(idx)]
+                        "related_docs": [prefix + "_" + str(idx)]
                     })
                 corpus.append({
-                    "id": str(idx),
+                    "id": prefix + "_" + str(idx),
                     "title": title,
                     "context": paragraph["context"]
                 })
