@@ -57,6 +57,8 @@ if __name__ == "__main__":
                 idx += 1
         with open(os.path.join(data_dir, corpus_file), 'w') as json_file:
             json.dump(corpus, json_file)
+        with open(os.path.join(data_dir, train_file), 'w') as json_file:
+            json.dump(corpus, json_file)
     else:
         with open(os.path.join(data_dir, train_file), 'r') as json_file:
             train = json.load(json_file)
