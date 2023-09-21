@@ -1,7 +1,7 @@
 # Multi Stages Finetuning Retriever Model
 ## Data Format
 
-Not law dataset:
+Raw dataset:
 ```bash
 ├── data
 │   ├── title
@@ -14,12 +14,11 @@ Not law dataset:
 └── ...
 ```
 
-Law dataset:
+Train dataset:
 ```bash
 ├── question
 ├── related_docs
-│   ├── no
-│   └── articles
+│   └── id
 └── ...
 ```
 
