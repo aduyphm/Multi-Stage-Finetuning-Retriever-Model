@@ -29,7 +29,13 @@ class RerankerTrainer(Trainer):
 
     def compute_loss(self, model, inputs, return_outputs=False):
         outputs: SequenceClassifierOutput = model(inputs)
-        loss = outputs.loss
+        loss = outputs[0]
+#         loss = outputs.loss
+#         print(loss)
+#         print(loss.shape)
+        loss = loss.mean()
+#         print(loss)
+#         assert 1 == 2
 
         if self.model.training:
             labels = inputs['labels']
