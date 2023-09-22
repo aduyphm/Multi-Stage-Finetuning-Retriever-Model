@@ -10,6 +10,9 @@ from config import Arguments
 from logger_config import logger
 from .loader_utils import group_doc_ids
 
+import pandas as pd
+import json
+from sklearn.model_selection import train_test_split
 
 class CrossEncoderDataLoader:
 
@@ -18,15 +21,22 @@ class CrossEncoderDataLoader:
         self.negative_size = args.train_n_passages - 1
         assert self.negative_size > 0
         self.tokenizer = tokenizer
-        corpus_path = os.path.join(args.data_dir, 'passages.jsonl.gz')
-        self.corpus: Dataset = load_dataset('json', data_files=corpus_path)['train']
+        
+        documents_data = pd.read_json(os.path.join(self.args.data_dir, self.args.corpus_file))
+        self.corpus = Dataset.from_pandas(documents_data)
+        
+#         corpus_path = os.path.join(args.data_dir, 'passages.jsonl.gz')
+#         self.corpus: Dataset = load_dataset('json', data_files=corpus_path)['train']
         self.train_dataset, self.eval_dataset = self._get_transformed_datasets()
 
         # use its state to decide which positives/negatives to sample
         self.trainer: Optional[Trainer] = None
 
     def _transform_func(self, examples: Dict[str, List]) -> Dict[str, List]:
-        current_epoch = int(self.trainer.state.epoch or 0)
+        current_epoch = 0
+        
+        if self.trainer:
+            current_epoch = int(self.trainer.state.epoch)
 
         input_doc_ids = group_doc_ids(
             examples=examples,
@@ -39,10 +49,10 @@ class CrossEncoderDataLoader:
         input_queries, input_docs = [], []
         for idx, doc_id in enumerate(input_doc_ids):
             prefix = ''
-            if self.corpus[doc_id].get('title', ''):
-                prefix = self.corpus[doc_id]['title'] + ': '
+            if self.corpus[self.corpus["id"] == doc_id].get('title', ''):
+                prefix = self.corpus[self.corpus["id"] == doc_id]['title'] + ': '
 
-            input_docs.append(prefix + self.corpus[doc_id]['contents'])
+            input_docs.append(prefix + self.corpus[self.corpus["id"] == doc_id]['context'])
             input_queries.append(examples['query'][idx // self.args.train_n_passages])
 
         batch_dict = self.tokenizer(input_queries,
@@ -62,30 +72,45 @@ class CrossEncoderDataLoader:
         return packed_batch_dict
 
     def _get_transformed_datasets(self) -> Tuple:
-        data_files = {}
-        if self.args.train_file is not None:
-            data_files["train"] = self.args.train_file.split(',')
-        if self.args.validation_file is not None:
-            data_files["validation"] = self.args.validation_file
-        raw_datasets: DatasetDict = load_dataset('json', data_files=data_files)
+#         data_files = {}
+#         if self.args.train_file is not None:
+#             data_files["train"] = self.args.train_file.split(',')
+#         if self.args.validation_file is not None:
+#             data_files["validation"] = self.args.validation_file
+#         raw_datasets: DatasetDict = load_dataset('json', data_files=data_files)
 
-        train_dataset, eval_dataset = None, None
+#         train_dataset, eval_dataset = None, None
 
-        if self.args.do_train:
-            if "train" not in raw_datasets:
-                raise ValueError("--do_train requires a train dataset")
-            train_dataset = raw_datasets["train"]
-            if self.args.max_train_samples is not None:
-                train_dataset = train_dataset.select(range(self.args.max_train_samples))
-            # Log a few random samples from the training set:
-            for index in random.sample(range(len(train_dataset)), 3):
-                logger.info(f"Sample {index} of the training set: {train_dataset[index]}.")
-            train_dataset.set_transform(self._transform_func)
+        train_dir = os.path.join(self.args.data_dir, self.args.train_dir)
+        train_data, eval_data = [], []
+        for train_file in os.listdir(train_dir):
+            with open(os.path.join(train_dir, train_file), 'r') as json_file:
+                queries_data = json.load(json_file)
+            train_json, eval_json = train_test_split(queries_data, test_size=0.2, random_state=42)
+            train_data.extend(train_json)
+            eval_data.extend(eval_json)
+        train_df = pd.DataFrame(train_data)
+        eval_df = pd.DataFrame(eval_data)
+        train_dataset = Dataset.from_pandas(train_df)
+        eval_dataset = Dataset.from_pandas(eval_df)
+        train_dataset.set_transform(self._transform_func)
+        eval_dataset.set_transform(self._transform_func)
 
-        if self.args.do_eval:
-            if "validation" not in raw_datasets:
-                raise ValueError("--do_eval requires a validation dataset")
-            eval_dataset = raw_datasets["validation"]
-            eval_dataset.set_transform(self._transform_func)
+#         if self.args.do_train:
+#             if "train" not in raw_datasets:
+#                 raise ValueError("--do_train requires a train dataset")
+#             train_dataset = raw_datasets["train"]
+#             if self.args.max_train_samples is not None:
+#                 train_dataset = train_dataset.select(range(self.args.max_train_samples))
+#             # Log a few random samples from the training set:
+#             for index in random.sample(range(len(train_dataset)), 3):
+#                 logger.info(f"Sample {index} of the training set: {train_dataset[index]}.")
+#             train_dataset.set_transform(self._transform_func)
+
+#         if self.args.do_eval:
+#             if "validation" not in raw_datasets:
+#                 raise ValueError("--do_eval requires a validation dataset")
+#             eval_dataset = raw_datasets["validation"]
+#             eval_dataset.set_transform(self._transform_func)
 
         return train_dataset, eval_dataset
